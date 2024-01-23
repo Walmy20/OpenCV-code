@@ -62,7 +62,7 @@ class VideoStreamWidget(object):
 
 if __name__ == "__main__":
     print("Starting Program")
-    df = pd.read_excel('C:\\Users\\walmym\\Desktop\\Downloads\\Scripts\\Camera Detection\\Camera_Areas.xlsx')
+    df = pd.read_excel('C:\\Users\\Camera_Areas.xlsx')
     # Lists of your camera RTSP URLs for different areas
     cameras_area1 = df['Camera_Area_1'].dropna().tolist()
     cameras_area2 = df['Camera_Area_2'].dropna().tolist()
