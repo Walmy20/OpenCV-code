@@ -5,7 +5,10 @@ from threading import Thread, Lock
 from queue import Queue
 
 def verify_stream(link):
-    cap = cv2.VideoCapture(link)
+    gst_str = ("rtspsrc location=" + link + " latency=0 ! "
+               "rtph265depay ! h265parse ! decodebin ! "
+               "videoconvert !  video/x-raw,format=BGR ! appsink drop=1")
+    cap = cv2.VideoCapture(gst_str)
     if not cap.isOpened():
         print("Camera link failed to open:", link)
         return False
@@ -28,9 +31,9 @@ def verify_and_filter_streams(camera_list):
 
 def this_receive(camera, queue, lock): 
     start_time = time.time()
-    gst_str = ("rtspsrc location=" + camera + " latency=10 ! "
-               "rtph264depay ! h264parse ! avdec_h264 ! "
-               "videoconvert ! appsink")
+    gst_str = ("rtspsrc location=" + camera + " latency=0 ! "
+               "rtph265depay ! h265parse ! decodebin ! "
+               "videoconvert !  video/x-raw,format=BGR ! appsink drop=1")
     cap = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
     if not cap.isOpened():
             print(f"Failed to open camera: {camera}")
