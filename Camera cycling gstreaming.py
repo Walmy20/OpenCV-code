@@ -1,40 +1,49 @@
+import os
+gstreamer_path = "C:\\gstreamer\\1.0\\msvc_x86_64\\bin"
+os.add_dll_directory(gstreamer_path)
+
 import time
 import cv2
 import pandas as pd
 from threading import Thread, Lock
 from queue import Queue
+import subprocess
 
-def verify_stream(link):
-    gst_str = ("rtspsrc location=" + link + " latency=0 ! "
+
+def get_codec(camera):
+    command = ["C:\\gstreamer\\1.0\\msvc_x86_64\\bin\\gst-launch-1.0.exe", "-v", "rtspsrc", "location="+camera, "!", "decodebin", "!", "fakesink", "silent=false", "-m"]
+
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    try:
+        # Wait for 5 seconds to get the output
+        stdout, _ = process.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        # If the command does not end after 5 seconds, terminate it
+        process.terminate()
+        stdout, _ = process.communicate()
+
+    output = stdout.decode()
+    
+    if 'H264' in output:
+        print('Encoding H264')
+        gst_str = ("rtspsrc location=" + camera + " latency=0 ! "
+               "rtph264depay ! h264parse ! decodebin ! "
+               "videorate !  video/x-raw,framerate=24/1 !"
+                "videoconvert ! appsink drop=true")
+    elif 'H265' in output:
+        print('Encoding H265')
+        gst_str = ("rtspsrc location=" + camera + " latency=0 ! "
                "rtph265depay ! h265parse ! decodebin ! "
-               "videoconvert !  video/x-raw,format=BGR ! appsink drop=1")
-    cap = cv2.VideoCapture(gst_str)
-    if not cap.isOpened():
-        print("Camera link failed to open:", link)
-        return False
+               "videorate !  video/x-raw,framerate=24/1 !"
+                "videoconvert ! appsink drop=true")
     else:
-        ret, frame = cap.read()
-        if not ret or frame is None:
-            print("Camera link failed ret or frame:", link)
-            return False
-        else:
-            cap.release()
-            return True
-
-def verify_and_filter_streams(camera_list):
-    working_cameras = []
-    for camera in camera_list:
-        if verify_stream(camera):
-            working_cameras.append(camera)
-    return working_cameras
+        raise RuntimeError('H.264 or H.265 decoder not found!')
+    return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
 
 
 def this_receive(camera, queue, lock): 
     start_time = time.time()
-    gst_str = ("rtspsrc location=" + camera + " latency=0 ! "
-               "rtph265depay ! h265parse ! decodebin ! "
-               "videoconvert !  video/x-raw,format=BGR ! appsink drop=1")
-    cap = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+    cap = get_codec(camera)
     if not cap.isOpened():
             print(f"Failed to open camera: {camera}")
             return
@@ -76,16 +85,13 @@ if __name__ == '__main__':
     cameras_area2 = df['CP'].dropna().tolist()
     cameras_area3 = df['PA'].dropna().tolist()
 
+    all_areas = [cameras_area2, cameras_area3]
     
-    # Combine all camera areas into one list
-    #all_areas = [verify_and_filter_streams(cameras_area1), 
-     #            verify_and_filter_streams(cameras_area2), 
-      #           verify_and_filter_streams(cameras_area3)]
-    all_areas = [cameras_area1, cameras_area2, cameras_area3]
 
     #print(all_areas)
     queue = Queue()
     lock = Lock()
+
     processor = Thread(target=main_program, args=(queue,lock))
     processor.start()
 
