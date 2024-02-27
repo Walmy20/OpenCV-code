@@ -35,10 +35,8 @@ def get_codec(camera):
         raise RuntimeError('H.264 or H.265 decoder not found!')
     return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
 
-#camera = r"rtsp://admin:Cwds11354@6d5f3a5def2ee7b027cd918692a99c7d.21.camera.verkada-lan.com:8554/standard"
-#camera = r"rtsp://admin:Cwds11354@192.168.4.3:554/Streaming/channels/101"
 
-camera = r"rtsp://admin:admin12345@12.131.44.139:10802/Streaming/channels/101"
+camera = r"rtsp://admin:admin12345@123.123.123.123:10802/Streaming/channels/101"
 
 # Determine the codec of the stream and stream it
 cap = get_codec(camera)
