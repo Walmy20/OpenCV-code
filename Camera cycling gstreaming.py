@@ -46,7 +46,7 @@ def get_codec(camera):
 def this_receive(camera, queue, lock): 
     start_time = time.time()
     cap = get_codec(camera)
-    if not cap.isOpened():
+    if cap is None or not cap.isOpened():
             print(f"Failed to open camera: {camera}")
             return
     #ret, next_frame = cap.read()
