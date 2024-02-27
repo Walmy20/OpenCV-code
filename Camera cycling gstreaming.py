@@ -37,7 +37,9 @@ def get_codec(camera):
                "videorate !  video/x-raw,framerate=24/1 !"
                 "videoconvert ! appsink drop=true")
     else:
-        raise RuntimeError('H.264 or H.265 decoder not found!')
+        print(f"H.264 or H.265 decoder not found! RTSP Url: {camera}")
+        return # None
+        
     return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
 
 
