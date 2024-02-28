@@ -1,4 +1,5 @@
 import os
+# This is need it in case missing DLL when importing cv2
 gstreamer_path = "C:\\gstreamer\\1.0\\msvc_x86_64\\bin"
 os.add_dll_directory(gstreamer_path)
 
@@ -9,48 +10,44 @@ from threading import Thread, Lock
 from queue import Queue
 import subprocess
 
-
+# Get the Proper Encoding Pipeline for the RTSP Stream
 def get_codec(camera):
     command = ["C:\\gstreamer\\1.0\\msvc_x86_64\\bin\\gst-launch-1.0.exe", "-v", "rtspsrc", "location="+camera, "!", "decodebin", "!", "fakesink", "silent=false", "-m"]
 
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    try:
-        # Wait for 5 seconds to get the output
-        stdout, _ = process.communicate(timeout=5)
-    except subprocess.TimeoutExpired:
-        # If the command does not end after 5 seconds, terminate it
-        process.terminate()
-        stdout, _ = process.communicate()
-
-    output = stdout.decode()
     
-    if 'H264' in output:
-        print('Encoding H264')
-        gst_str = ("rtspsrc location=" + camera + " latency=0 ! "
-               "rtph264depay ! h264parse ! decodebin ! "
-               "videorate !  video/x-raw,framerate=24/1 !"
-                "videoconvert ! appsink drop=true")
-    elif 'H265' in output:
-        print('Encoding H265')
-        gst_str = ("rtspsrc location=" + camera + " latency=0 ! "
-               "rtph265depay ! h265parse ! decodebin ! "
-               "videorate !  video/x-raw,framerate=24/1 !"
-                "videoconvert ! appsink drop=true")
-    else:
-        print(f"H.264 or H.265 decoder not found! RTSP Url: {camera}")
-        return # None
-        
-    return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+    while True:
+        output = process.stdout.readline().decode()
+        if output == '' and process.poll() is not None:
+            break
+        if 'H264' in output:
+            print('Encoding H264')
+            process.terminate()
+            gst_str = ("rtspsrc location=" + camera + " latency=0 ! "
+                "rtph264depay ! h264parse ! decodebin ! "
+                "videorate !  video/x-raw,framerate=24/1 !"
+                    "videoconvert ! appsink drop=true")
+            return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+        elif 'H265' in output:
+            print('Encoding H265')
+            process.terminate()
+            gst_str = ("rtspsrc location=" + camera + " latency=0 ! "
+                "rtph265depay ! h265parse ! decodebin ! "
+                "videorate !  video/x-raw,framerate=24/1 !"
+                    "videoconvert ! appsink drop=true")
+            return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+    print(f"H.264 or H.265 decoder not found! Skipping RTSP Url: {camera}")
+    return None
 
-
+# Preprocess the stream in a different Thread
 def this_receive(camera, queue, lock): 
     start_time = time.time()
     cap = get_codec(camera)
+    
     if cap is None or not cap.isOpened():
             print(f"Failed to open camera: {camera}")
             return
-    #ret, next_frame = cap.read()
-    #queue.put(next_frame)
+        
     while cap.isOpened() and time.time() - start_time < 25:
         ret, next_frame = cap.read()
         if not ret:
@@ -62,6 +59,7 @@ def this_receive(camera, queue, lock):
             queue.put(next_frame)  
     cap.release()
 
+# Display the stream in a different Thread
 def main_program(queue,lock):
     print("Displaying...")
      # 1920x1080 full screen
@@ -87,10 +85,9 @@ if __name__ == '__main__':
     cameras_area2 = df['CP'].dropna().tolist()
     cameras_area3 = df['PA'].dropna().tolist()
 
-    all_areas = [cameras_area2, cameras_area3]
+    all_areas = [camera_area1,cameras_area2, cameras_area3]
     
 
-    #print(all_areas)
     queue = Queue()
     lock = Lock()
 
