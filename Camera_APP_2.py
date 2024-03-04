@@ -151,6 +151,14 @@ if __name__ == '__main__':
     print("Starting Camera Program ...")
     app = QApplication(sys.argv)
     ex = App()
+    
+     # Get the screen size of the primary monitor
+    screen = app.primaryScreen()
+    size = screen.size()
+    print(size)
+    # Set the width and height of the application window to match the primary monitor
+    ex.setFixedSize(size.width(), size.height())
+    
     ex.show()
     sys.exit(app.exec_())
   
