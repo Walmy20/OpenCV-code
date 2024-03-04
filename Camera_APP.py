@@ -4,8 +4,6 @@ os.add_dll_directory(gstreamer_path)
 
 import cv2
 import pandas as pd
-from threading import Thread #, Lock
-#from queue import Queue
 import subprocess
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QGridLayout, QSizePolicy
 from PyQt5.QtGui import QImage, QPixmap
@@ -38,16 +36,18 @@ def set_cap(camera):
      if codec == 'H264':
         gst_str = ("rtspsrc location=" + camera + " latency=0 ! "
             "rtph264depay ! h264parse ! decodebin ! "
+            "videoscale ! video/x-raw,width=1280,height=720 ! "
             "videorate !  video/x-raw,framerate=24/1 !"
                 "videoconvert ! appsink drop=true")
         return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
      elif codec == 'H265':
         gst_str = ("rtspsrc location=" + camera + " latency=0 ! "
             "rtph265depay ! h265parse ! decodebin ! "
+            "videoscale ! video/x-raw,width=1280,height=720 ! "
             "videorate !  video/x-raw,framerate=24/1 !"
                 "videoconvert ! appsink drop=true")
         return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
-    else:
+     else:
         print(f"Unsupported video encoding for RTSP Url: {camera}")
         return None
 
@@ -100,13 +100,13 @@ class App(QWidget):
         self.setLayout(layout)
 
         # Create labels for displaying the video
-        self.labels = [QLabel(self) for _ in range(4)]
+        self.labels = [QLabel(self) for _ in range(6)]
         for i, label in enumerate(self.labels):
             label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # Set size policy to expanding
             label.setScaledContents(True)  # Set scale contents to true
-            
+
             label.mousePressEvent = self.get_label_click_handler(i)  # Add mouse click event handler
-            layout.addWidget(label, i // 2, i % 2)  # Arrange labels in a 2x2 grid
+            layout.addWidget(label, i // 3, i % 3)  # Arrange labels in a 4x3 grid
 
         # Lists of your camera RTSP URLs for different areas
         path = r"C:\\Users\\walmym\\Desktop\\Downloads\\Scripts\\Camera App\\Camera.xlsx"
@@ -122,9 +122,6 @@ class App(QWidget):
         # Make the window full screen
         self.showFullScreen()     
         
-
-
-
     def get_label_click_handler(self, i):
         def handler(event):
             # Hide all labels
@@ -149,14 +146,12 @@ if __name__ == '__main__':
     print("Starting Camera Program ...")
     app = QApplication(sys.argv)
     ex = App()
-    
-     # Get the screen size of the primary monitor
+
+    # Get the screen size of the primary monitor
     screen = app.primaryScreen()
     size = screen.size()
-    print(size)
     # Set the width and height of the application window to match the primary monitor
     ex.setFixedSize(size.width(), size.height())
-    
+
     ex.show()
     sys.exit(app.exec_())
-  
