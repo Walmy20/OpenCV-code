@@ -47,6 +47,9 @@ def set_cap(camera):
             "videorate !  video/x-raw,framerate=24/1 !"
                 "videoconvert ! appsink drop=true")
         return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+    else:
+        print(f"Unsupported video encoding for RTSP Url: {camera}")
+        return None
 
 
 class VideoThread(QThread):
