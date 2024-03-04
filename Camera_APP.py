@@ -103,8 +103,6 @@ class App(QWidget):
         self.labels = [QLabel(self) for _ in range(4)]
         for i, label in enumerate(self.labels):
             label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # Set size policy to expanding
-            if not self.full_screen:  # If the application is not in full screen mode
-                label.setFixedSize(640, 480)  # Set fixed size to 640x480 when not in full screen mode
             label.setScaledContents(True)  # Set scale contents to true
             
             label.mousePressEvent = self.get_label_click_handler(i)  # Add mouse click event handler
