@@ -12,7 +12,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread
 import sys
-
+import numpy as np
 
 def get_codec(camera):
     command = ["C:\\gstreamer\\1.0\\msvc_x86_64\\bin\\gst-launch-1.0.exe", "-v", "rtspsrc", "location="+camera, "!", "decodebin", "!", "fakesink", "silent=false", "-m"]
@@ -60,10 +60,18 @@ class VideoThread(QThread):
     def run(self):
         print("VideoThread started") 
         cap = set_cap(self.camera)
+        if cap is None:
+            # Create a black image if the RTSP URL is incorrect
+            rgb_image = np.zeros((480, 640, 3), dtype=np.uint8)
+            h, w, ch = rgb_image.shape
+            bytes_per_line = ch * w
+            convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+            p = QPixmap.fromImage(convert_to_Qt_format)
+            self.changePixmap.emit(p)
+            return
         while True:
             ret, frame = cap.read()
             if ret:
-                
                 rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 h, w, ch = rgb_image.shape
                 bytes_per_line = ch * w
